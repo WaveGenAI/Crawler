@@ -1,2 +1,2 @@
-scrapy
-scrapy-playwright
+playwright
+redis

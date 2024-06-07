@@ -12,7 +12,7 @@ pip install -r requirements.txt
 
 Run the crawler
 ```bash
-scrapy crawl audios
+python3 main.py
 ```
 
 ## License
