@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 
 quotes.json
+
+storage/
