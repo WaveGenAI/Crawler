@@ -38,7 +38,7 @@ class RobotTXT:
         for agent in self._user_agent:
             authorize.append(self._robots[robots_url].can_fetch(url, agent))
 
-        if len(self._robots) > 100:
+        if len(self._robots) > 1000:
             self._robots.popitem(last=False)
 
         return all(authorize)
