@@ -164,3 +164,4 @@ cython_debug/
 quotes.json
 
 storage/
+results.json

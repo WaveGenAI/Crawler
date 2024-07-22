@@ -1,1 +1,3 @@
 crawlee[beautifulsoup,playwright]
+aiohttp
+protego

@@ -11,9 +11,8 @@ async def main() -> None:
         request_handler=router,
     )
 
-    await crawler.run(
-        ["https://freemusicarchive.org/member/meghan-admin/meet-the-exploding-pea-mix/"]
-    )
+    await crawler.run(["https://freemusicarchive.org/"])
+    await crawler.export_data("results.json")
 
 
 if __name__ == "__main__":
