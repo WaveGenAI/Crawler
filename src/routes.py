@@ -53,6 +53,8 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
 
             authorized = await robots_parser(url)  # get if robots.txt allow the crawl
             if authorized:
-                requests.append(url)
+                url_trunk = url.split("?")[0].split("#")[0]
+
+                requests.append(url_trunk)
 
     await context.add_requests(requests)
