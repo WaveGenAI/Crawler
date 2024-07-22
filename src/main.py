@@ -19,7 +19,7 @@ async def main() -> None:
         request_handler=router,
     )
 
-    await crawler.run(["https://www.ashamaluevmusic.com"])
+    await crawler.run(["https://freemusicarchive.org"])
     await crawler.export_data("results.json")
     process("results.json")
 
