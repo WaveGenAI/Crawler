@@ -1,12 +1,19 @@
+"""
+main script for the crawler
+"""
+
 import asyncio
 
-from crawlee.playwright_crawler import PlaywrightCrawler
 from crawlee.beautifulsoup_crawler import BeautifulSoupCrawler
 
 from routes import router
 
 
 async def main() -> None:
+    """
+    Function to launch the crawler
+    """
+
     crawler = BeautifulSoupCrawler(
         request_handler=router,
     )
