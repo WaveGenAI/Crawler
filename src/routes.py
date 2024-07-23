@@ -27,7 +27,7 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
     context.log.info(f"Processing page: {context.request.url}")
 
     url = context.request.url
-    html_page = str(context.soup).replace("\/", "/")
+    html_page = str(context.soup).replace(r"\/", "/")
 
     matches = re.finditer(regex, html_page)
 
