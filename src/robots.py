@@ -15,7 +15,7 @@ class RobotTXT:
 
     def __init__(self):
         self._robots = {}
-        self._user_agent = ["*", "GPTBot", "WaveAICrawler"]
+        self._user_agent = ["gptbot", "waveaicrawler"]  # lower case
 
     async def __call__(self, url: str, log: logging.Logger = None) -> bool:
         """Check if the url is allowed to be crawled
@@ -46,9 +46,15 @@ class RobotTXT:
                 if log is not None:
                     log.error(f"Error fetching robots.txt from {robots_url}: {e}")
 
-        authorize = []
+        authorize = authorize = self._robots[robots_url].can_fetch(url, "*")
         for agent in self._user_agent:
-            authorize.append(self._robots[robots_url].can_fetch(url, agent))
+            agents_on_site = [
+                agent_on_site
+                for agent_on_site in self._robots[robots_url]._user_agents.keys()
+            ]
+
+            if agent in agents_on_site:
+                authorize = self._robots[robots_url].can_fetch(url, agent)
 
         if len(self._robots) > 1000:
             older_keys = list(self._robots.keys())[-1]
@@ -57,4 +63,4 @@ class RobotTXT:
             if log is not None:
                 log.info(f"Removing robots.txt for {robots_url}")
 
-        return all(authorize)
+        return authorize
