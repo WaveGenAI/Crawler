@@ -33,7 +33,7 @@ parser.add_argument(
     "--urls",
     type=str,
     nargs="+",
-    default=["https://freemusicarchive.org"],
+    default=["https://musiclab.chromeexperiments.com/"],
     help="list of urls to start the crawl",
 )
 args = parser.parse_args()

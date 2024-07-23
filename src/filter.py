@@ -25,6 +25,19 @@ class Filter:
         self._max_crawl = max_crawl
         self._domains = TTLCache(maxsize=cache_size, ttl=ttl)
 
+    def increment_domain(self, url: str) -> None:
+        """Increment the counter of the domain
+
+        Args:
+            url (str): the url to increment
+        """
+        domain = urllib.parse.urlparse(url).netloc
+
+        if domain not in self._domains:
+            self._domains[domain] = 1
+        else:
+            self._domains[domain] += 1
+
     def check_domain(self, url: str) -> bool:
         """Check if the domain has not been visited more than max_crawl times and no songs are added
 
@@ -37,9 +50,7 @@ class Filter:
         domain = urllib.parse.urlparse(url).netloc
 
         if domain not in self._domains:
-            self._domains[domain] = 1
-        else:
-            self._domains[domain] += 1
+            return True
 
         return self._domains[domain] <= self._max_crawl
 

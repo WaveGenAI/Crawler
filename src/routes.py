@@ -26,9 +26,18 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
         context (BeautifulSoupCrawlingContext): the context of the crawler
     """
 
-    context.log.info(f"Processing page: {context.request.url}")
-
     url = context.request.url
+
+    authorized = await robots_parser(
+        url, context.log
+    )  # get if robots.txt allow the crawl
+    if not authorized:
+        return
+
+    context.log.info(f"Processing page: {url}")
+
+    filter_domain.increment_domain(url)
+
     html_page = str(context.soup).replace(r"\/", "/")
 
     matches = re.finditer(REGEX, html_page)
@@ -56,7 +65,12 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
         keyword in text.lower() for keyword in keywords
     ) and filter_domain.check_domain(url):
         requests = []
+
+        nbm_links = 0  # limit the number of links added by a unique page
         for link in context.soup.select("a"):
+            if nbm_links > 100:
+                break
+
             if link.attrs.get("href") is not None:
                 url = urllib.parse.urljoin(
                     context.request.url, link.attrs.get("href")
@@ -66,11 +80,10 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
                     continue
 
                 authorized = await robots_parser(
-                    url, context.log
+                    url, context.log, do_req=False
                 )  # get if robots.txt allow the crawl
-                if authorized:
-                    url_trunk = url.split("?")[0].split("#")[0]
-
-                    requests.append(url_trunk)
+                if authorized or authorized is None:
+                    requests.append(url)
+                    nbm_links += 1
 
         await context.add_requests(requests)

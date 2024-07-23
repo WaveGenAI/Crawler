@@ -28,24 +28,27 @@ class RobotTXT:
                 robots_content = await response.text()
                 return Protego.parse(robots_content)
 
-    async def __call__(self, url: str, log: logging.Logger = None) -> bool:
+    async def __call__(
+        self, url: str, log: logging.Logger = None, do_req: bool = True
+    ) -> bool | None:
         """Check if the url is allowed to be crawled
 
         Args:
             url (str): url to be checked
             log (logging.Logger, optional): logger to log the result. Defaults to None.
-
+            do_req (bool, optional): if the request should be done. Defaults to True.
         Returns:
-            bool: True if the url is allowed to be crawled, False otherwise
+            bool | None: True if the url is allowed to be crawled, False otherwise
         """
 
         url_parse = urllib.parse.urlparse(url)
         robots_url = f"{url_parse.scheme}://{url_parse.netloc}/robots.txt"
 
         if robots_url not in self._robots:
-            if log is not None:
-                log.info(f"Fetching robots.txt from {robots_url}")
+            if not do_req:
+                return None
 
+            log.info(f"Fetching robots.txt from {robots_url}")
             try:
                 robots_parser = await self._fetch_robots_txt(robots_url)
                 self._robots[robots_url] = robots_parser
