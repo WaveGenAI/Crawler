@@ -1,3 +1,4 @@
 crawlee[beautifulsoup]
 aiohttp
 protego
+cachetools

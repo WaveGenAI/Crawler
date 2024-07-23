@@ -35,7 +35,10 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
     audio_links = [html_page[match.start() : match.end()] for match in matches]
 
     for link in audio_links:
-        link = urllib.parse.urljoin(url, link)
+        if link.startswith("//"):
+            link = "https:" + link
+        else:
+            link = urllib.parse.urljoin(url, link)
 
         data = {"url": link, "src": url}
 
