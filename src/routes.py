@@ -8,11 +8,13 @@ import urllib.parse
 from crawlee.basic_crawler import Router
 from crawlee.beautifulsoup_crawler import BeautifulSoupCrawlingContext
 
+from filter import Filter
 from robots import RobotTXT
 from utils import is_valid_url
 
 router = Router[BeautifulSoupCrawlingContext]()
 robots_parser = RobotTXT()
+filter_domain = Filter()
 REGEX = r"(https?:)?(\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)\.(mp3|wav|ogg)"
 
 
@@ -44,24 +46,31 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
 
         context.log.info(f"Found audio link: {link}")
         await context.push_data(data)  # save the links
+        filter_domain.valid_domain(url)  # reset the counter of the domain
 
-    # get all links in the page
-    requests = []
-    for link in context.soup.select("a"):
-        if link.attrs.get("href") is not None:
-            url = urllib.parse.urljoin(
-                context.request.url, link.attrs.get("href")
-            ).strip()
+    # check if keywords music, audio, sound are in the page
+    keywords = ["music", "audio", "sound", "song", "artist"]
+    text = context.soup.get_text(separator=" ", strip=True)
 
-            if not is_valid_url(url):
-                continue
+    if any(
+        keyword in text.lower() for keyword in keywords
+    ) and filter_domain.check_domain(url):
+        requests = []
+        for link in context.soup.select("a"):
+            if link.attrs.get("href") is not None:
+                url = urllib.parse.urljoin(
+                    context.request.url, link.attrs.get("href")
+                ).strip()
 
-            authorized = await robots_parser(
-                url, context.log
-            )  # get if robots.txt allow the crawl
-            if authorized:
-                url_trunk = url.split("?")[0].split("#")[0]
+                if not is_valid_url(url):
+                    continue
 
-                requests.append(url_trunk)
+                authorized = await robots_parser(
+                    url, context.log
+                )  # get if robots.txt allow the crawl
+                if authorized:
+                    url_trunk = url.split("?")[0].split("#")[0]
 
-    await context.add_requests(requests)
+                    requests.append(url_trunk)
+
+        await context.add_requests(requests)
