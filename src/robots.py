@@ -2,7 +2,6 @@
 Class to respect robot.txt file
 """
 
-import asyncio
 import logging
 import urllib.parse
 
@@ -48,10 +47,7 @@ class RobotTXT:
 
         authorize = authorize = self._robots[robots_url].can_fetch(url, "*")
         for agent in self._user_agent:
-            agents_on_site = [
-                agent_on_site
-                for agent_on_site in self._robots[robots_url]._user_agents.keys()
-            ]
+            agents_on_site = list(self._robots[robots_url]._user_agents.keys())
 
             if agent in agents_on_site:
                 authorize = self._robots[robots_url].can_fetch(url, agent)

@@ -13,7 +13,7 @@ from utils import is_valid_url
 
 router = Router[BeautifulSoupCrawlingContext]()
 robots_parser = RobotTXT()
-regex = r"(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)\.(mp3|wav|ogg)"
+REGEX = r"(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)\.(mp3|wav|ogg)"
 
 
 @router.default_handler
@@ -29,7 +29,7 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
     url = context.request.url
     html_page = str(context.soup).replace(r"\/", "/")
 
-    matches = re.finditer(regex, html_page)
+    matches = re.finditer(REGEX, html_page)
 
     # get all audios links
     audio_links = [html_page[match.start() : match.end()] for match in matches]

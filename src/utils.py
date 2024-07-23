@@ -12,7 +12,9 @@ def process(file_name: str) -> None:
     Args:
         file_name (str): the file name to process
     """
-    data = json.load(open(file_name, encoding="utf-8"))
+
+    with open(file_name, encoding="utf-8") as file:
+        data = json.load(file)
 
     unique_urls = set()
     unique_data = []
