@@ -37,15 +37,14 @@ class RobotTXT:
 
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(robots_url) as response:
+                    async with session.get(robots_url, timeout=5) as response:
                         robots_content = await response.text()
                         self._robots[robots_url] = Protego.parse(robots_content)
-            except (
-                aiohttp.ClientError,
-                asyncio.exceptions.CancelledError,
-                asyncio.exceptions.TimeoutError,
-            ):
+            except Exception as e:
                 self._robots[robots_url] = Protego.parse("User-agent: *\nDisallow: /")
+
+                if log is not None:
+                    log.error(f"Error fetching robots.txt from {robots_url}: {e}")
 
         authorize = []
         for agent in self._user_agent:
