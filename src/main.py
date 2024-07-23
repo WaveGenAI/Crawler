@@ -47,7 +47,7 @@ async def main() -> None:
     crawler = BeautifulSoupCrawler(
         request_handler=router, max_requests_per_crawl=args.max_requests
     )
-    print(args.urls)
+
     await crawler.run(args.urls)
     await crawler.export_data(args.output)
     process(args.output)
