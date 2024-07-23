@@ -13,7 +13,7 @@ from utils import is_valid_url
 
 router = Router[BeautifulSoupCrawlingContext]()
 robots_parser = RobotTXT()
-REGEX = r"(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)\.(mp3|wav|ogg)"
+REGEX = r"(https?:)?(\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)\.(mp3|wav|ogg)"
 
 
 @router.default_handler
