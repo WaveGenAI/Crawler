@@ -49,7 +49,9 @@ async def default_handler(context: BeautifulSoupCrawlingContext) -> None:
     requests = []
     for link in context.soup.select("a"):
         if link.attrs.get("href") is not None:
-            url = urllib.parse.urljoin(context.request.url, link.attrs.get("href"))
+            url = urllib.parse.urljoin(
+                context.request.url, link.attrs.get("href")
+            ).strip()
 
             if not is_valid_url(url):
                 continue

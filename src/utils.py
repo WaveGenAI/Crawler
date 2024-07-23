@@ -44,6 +44,7 @@ def is_valid_url(url: str) -> bool:
 
     try:
         result = urllib.parse.urlparse(url)
-        return all([result.scheme, result.netloc])
+        invalid_ascii = any(char.isascii() and not char.isprintable() for char in url)
+        return all([result.scheme, result.netloc, not (invalid_ascii)])
     except AttributeError:
         return False
