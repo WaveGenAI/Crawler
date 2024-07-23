@@ -52,7 +52,7 @@ class RobotTXT:
             if agent in agents_on_site:
                 authorize = self._robots[robots_url].can_fetch(url, agent)
 
-        if len(self._robots) >= 3:
+        if len(self._robots) >= 1000:
             older_keys = list(self._robots.keys())[0]
             self._robots.pop(older_keys)
 
