@@ -32,14 +32,16 @@ class ArchiveDownloader:
             if "mp3" in file["format"].lower():
                 url = f"{self.BASE_URL}{item.identifier}/{file['name']}"
 
-                metadatas = ", ".join(item.metadata.get("subject", "")) + ", ".join(
-                    [
-                        file.get("title", ""),
-                        file.get("album", ""),
-                        file.get("genre", ""),
-                    ]
-                )
+                subject = item.metadata.get("subject", [])
+                if isinstance(subject, str):
+                    subject = [subject]
 
+                metadatas = ["subject: " + " ".join(subject)] + [
+                    f'title: {file.get("title", "")}',
+                    f'album: {file.get("album", "")}',
+                    f'genre: {file.get("genre", "")}',
+                ]
+                metadatas = ", ".join(metadatas).strip().replace(";", ",")
                 self.urls.append((url, metadatas))
 
         self.export_urls()
