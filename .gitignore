@@ -167,3 +167,4 @@ storage/
 results.json
 
 *.txt
+*.xml

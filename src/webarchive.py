@@ -10,7 +10,7 @@ class ArchiveDownloader:
 
     BASE_URL = "https://archive.org/download/"
 
-    def __init__(self, output_file: str = "musics.txt"):
+    def __init__(self, output_file: str = "musics.xml"):
         """Initialize the downloader
 
         Args:
@@ -27,10 +27,20 @@ class ArchiveDownloader:
             item_id (str): the item id
         """
         item = internetarchive.get_item(item_id)
+
         for file in item.files:
             if "mp3" in file["format"].lower():
                 url = f"{self.BASE_URL}{item.identifier}/{file['name']}"
-                self.urls.append(url)
+
+                metadatas = ", ".join(item.metadata.get("subject", "")) + ", ".join(
+                    [
+                        file.get("title", ""),
+                        file.get("album", ""),
+                        file.get("genre", ""),
+                    ]
+                )
+
+                self.urls.append((url, metadatas))
 
         self.export_urls()
 
@@ -59,7 +69,7 @@ class ArchiveDownloader:
         """
         with open(self.output_file, "a", encoding="utf-8") as f:
             for url in self.urls:
-                f.write(f"{url}\n")
+                f.write(f"{url[0]}; {url[1]}\n")
 
         self.urls = []
 
