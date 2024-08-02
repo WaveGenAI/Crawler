@@ -165,3 +165,5 @@ quotes.json
 
 storage/
 results.json
+
+*.txt

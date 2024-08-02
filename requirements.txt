@@ -1,4 +1,1 @@
-crawlee[beautifulsoup]
-aiohttp
-protego
-cachetools
+internetarchive
