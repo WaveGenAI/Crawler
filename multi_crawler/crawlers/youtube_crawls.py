@@ -174,7 +174,7 @@ class YoutubeCrawler(BaseCrawler):
                                     )
 
                                 # Call the callback function
-                                self._callback(video_url, audio)
+                                self._callback(audio)
                                 results_found += 1
                 elif "continuationItemRenderer" in content:
                     continuation_token = content["continuationItemRenderer"][

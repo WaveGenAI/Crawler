@@ -7,27 +7,35 @@ import csv
 import os
 from typing import List
 
+from ..models import Audio
+
 
 class CSVExporter:
     """Class to export the results of the crawler to a CSV file."""
 
-    def __init__(self, filename: str, *columns: List[str], overwrite: bool = False):
+    def __init__(self, filename: str, overwrite: bool = False):
         self._filename = filename
-        self._columns = columns
+        self._columns = list(Audio.model_fields.keys())
 
         # Write the columns to the CSV file
         if overwrite or not os.path.exists(self._filename):
             with open(self._filename, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
-                writer.writerow(columns)
+                writer.writerow(self._columns)
 
-    def __call__(self, *items: List[str]):
-        """Add a URL to the CSV file.
+    def __call__(self, audio: Audio):
+        """Write the information of the audio to the CSV file.
 
         Args:
-            items (List[str]): the items to add to the CSV file
+            audio (Audio): the audio object to write to the CSV file
         """
-
         with open(self._filename, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(items)
+
+            # Write the values of the audio object to the CSV file
+            writer.writerow(
+                [
+                    "" if getattr(audio, field) is None else getattr(audio, field)
+                    for field in self._columns
+                ]
+            )

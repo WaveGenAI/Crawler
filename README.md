@@ -12,7 +12,7 @@ pip install -r requirements.txt
 
 Run the crawler
 ```bash
-python src/main.py
+python main.py --csv --input FILE.txt --overwrite --file_name FILE.csv
 ```
 
 ## License
