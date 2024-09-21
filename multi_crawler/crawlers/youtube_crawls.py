@@ -2,9 +2,10 @@ import urllib.parse
 from typing import Any, Callable, Dict, List, Sequence
 
 from ..session import Session
+from .crawlers import BaseCrawler
 
 
-class YoutubeCrawler:
+class YoutubeCrawler(BaseCrawler):
     """
     Find and return URLs of Youtube videos based on search terms.
     """
