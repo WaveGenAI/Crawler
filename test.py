@@ -2,11 +2,11 @@ import os
 
 from dotenv import load_dotenv
 
-from multi_crawler import TorSession, YoutubeCrawler
+from multi_crawler import Session, YoutubeCrawler
 
 load_dotenv(override=True)
 
-terms = "music"
+terms = "phonk"
 i = 0
 
 
@@ -16,7 +16,6 @@ def print_url(url: str):
     print(url, i)
 
 
-crawlers = YoutubeCrawler(
-    terms=terms, callback=print_url, session=TorSession(os.getenv("TOR_PSWD"))
-)
-crawlers.crawl(nb_results=10_000)
+crawlers = YoutubeCrawler(terms=terms, callback=print_url, session=Session)
+
+crawlers.crawl(nb_results=float("inf"))

@@ -1,4 +1,3 @@
-import time
 import urllib.parse
 from typing import Any, Callable, Dict, List, Sequence
 
@@ -85,7 +84,7 @@ class YoutubeCrawler:
                 data["query"] = None
 
             session = self._session()
-            response = session.post(self.YT_SEARCH_URL, headers=headers, json=data)
+            response = session().post(self.YT_SEARCH_URL, headers=headers, json=data)
 
             response.raise_for_status()
 
@@ -99,6 +98,15 @@ class YoutubeCrawler:
                 if "itemSectionRenderer" in content:
                     items = content["itemSectionRenderer"]["contents"]
                     for item in items:
+                        if "messageRenderer" in item:
+                            if (
+                                item["messageRenderer"]["text"]["runs"][0][
+                                    "text"
+                                ].strip()
+                                == "No more results"
+                            ):
+                                return
+
                         if results_found >= nb_results:
                             break
                         if "videoRenderer" in item:
