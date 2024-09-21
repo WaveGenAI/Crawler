@@ -1,12 +1,6 @@
-import os
+from multi_crawler import CSVExporter, Session, YoutubeCrawler
 
-from dotenv import load_dotenv
 
-from multi_crawler import Session, YoutubeCrawler
-
-load_dotenv(override=True)
-
-terms = "phonk"
 i = 0
 
 
@@ -16,6 +10,7 @@ def print_url(url: str):
     print(url, i)
 
 
-crawlers = YoutubeCrawler(terms=terms, callback=print_url, session=Session)
+exporter = CSVExporter("results.csv", "URL", overwrite=True)
+crawlers = YoutubeCrawler("phonk", callback=exporter, session=Session)
 
-crawlers.crawl(nb_results=float("inf"))
+crawlers.crawl()

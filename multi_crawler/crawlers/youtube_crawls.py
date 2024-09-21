@@ -47,11 +47,11 @@ class YoutubeCrawler:
         else:
             return []
 
-    def crawl(self, nb_results: int) -> None:
+    def crawl(self, nb_results: int = float("inf")) -> None:
         """Find and return URLs of Youtube videos based on search terms.
 
         Args:
-            nb_results (int): the number of results to return
+            nb_results (int): the number of results to return, Defaults to float("inf").
 
         Raises:
             ValueError: if nb_results is less than 1
