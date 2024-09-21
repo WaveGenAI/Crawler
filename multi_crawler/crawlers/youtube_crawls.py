@@ -1,6 +1,8 @@
+import re
 import urllib.parse
 from typing import Any, Callable, Dict, List, Sequence
 
+from ..models import Audio
 from ..session import Session
 from .crawlers import BaseCrawler
 
@@ -27,6 +29,29 @@ class YoutubeCrawler(BaseCrawler):
         self._session = session
 
     @staticmethod
+    def _get_description(content: str) -> str:
+        """Find and return the description of a Youtube video.
+
+        Args:
+            content (str): the content of the Youtube video page
+
+        Returns:
+            str: the description of the video
+        """
+
+        description_match = re.search(
+            r'attributedDescription":\{"content":"((?:\\.|[^"\\])*)"',
+            content,
+            re.DOTALL,
+        )
+
+        descr = ""
+        if description_match:
+            descr = description_match.group(1)
+
+        return descr
+
+    @staticmethod
     def _get_contents(result: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Find and return the contents of a Youtube search result.
 
@@ -37,6 +62,7 @@ class YoutubeCrawler(BaseCrawler):
             List[Dict[str, Any]]: the contents of the search result
         """
 
+        # Check if the result contains the contents
         if "contents" in result:
             return result["contents"]["twoColumnSearchResultsRenderer"][
                 "primaryContents"
@@ -88,17 +114,18 @@ class YoutubeCrawler(BaseCrawler):
             response = session().post(self.YT_SEARCH_URL, headers=headers, json=data)
 
             response.raise_for_status()
-
             result = response.json()
 
             contents = self._get_contents(result)
 
+            # Get the contents of the search result
             for content in contents:
                 if results_found >= nb_results:
                     break
                 if "itemSectionRenderer" in content:
                     items = content["itemSectionRenderer"]["contents"]
                     for item in items:
+                        # Check if there are no more results
                         if "messageRenderer" in item:
                             if (
                                 item["messageRenderer"]["text"]["runs"][0][
@@ -110,13 +137,33 @@ class YoutubeCrawler(BaseCrawler):
 
                         if results_found >= nb_results:
                             break
+
                         if "videoRenderer" in item:
                             video_id = item["videoRenderer"].get("videoId")
                             if video_id:
+                                # Get the video information
+                                video_renderer = item["videoRenderer"]
                                 video_url = (
                                     f"https://www.youtube.com/watch?v={video_id}"
                                 )
-                                self._callback(video_url)
+
+                                title = video_renderer["title"]["runs"][0]["text"]
+                                channel_name = video_renderer["ownerText"]["runs"][0][
+                                    "text"
+                                ]
+
+                                video_page = session().get(video_url)
+                                description = self._get_description(video_page.text)
+
+                                audio = Audio(
+                                    url=video_url,
+                                    title=title,
+                                    author=channel_name,
+                                    description=description,
+                                )
+
+                                # Call the callback function
+                                self._callback(video_url, audio)
                                 results_found += 1
                 elif "continuationItemRenderer" in content:
                     continuation_token = content["continuationItemRenderer"][

@@ -6,6 +6,7 @@ from typing import Callable
 
 import internetarchive
 
+from ..models import Audio
 from .crawlers import BaseCrawler
 
 
@@ -33,6 +34,7 @@ class ArchiveCrawler(BaseCrawler):
         """
         item = internetarchive.get_item(item_id)
 
+        # get each audio file and call the callback with the information
         for file in item.files:
             if "mp3" in file["format"].lower():
                 url = f"{self.BASE_URL}{item.identifier}/{file['name']}"
@@ -53,15 +55,19 @@ class ArchiveCrawler(BaseCrawler):
                     metadata["genre"] = item.metadata["genre"]
 
                 if len(subject) > 0:
-                    metadata["keywords"] = ", ".join(subject)
+                    metadata["description"] = ", ".join(subject)
 
-                self._callback(url, **metadata)
+                metadata["url"] = url
+
+                audio = Audio(**metadata)
+                self._callback(url, audio)
 
     def crawl(self) -> None:
         """Search and extract ids"""
 
         search = internetarchive.search_items(f"collection:{self._collection}")
 
+        # sometimes collect contain another collection
         if len(search) == 0:
             self._find_url(self._collection)
         else:
