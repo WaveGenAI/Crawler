@@ -15,7 +15,11 @@ class YoutubeCrawler(BaseCrawler):
     YT_SEARCH_URL = "https://www.youtube.com/youtubei/v1/search?prettyPrint=false"
 
     def __init__(
-        self, terms: Sequence[str], callback: Callable, session: Session = Session
+        self,
+        terms: Sequence[str],
+        callback: Callable,
+        session: Session = Session,
+        process: bool = False,
     ):
         """Create a new YoutubeCrawler object.
 
@@ -23,10 +27,12 @@ class YoutubeCrawler(BaseCrawler):
             terms (Sequence[str]): the search terms
             callback (Callable): the function to call with the URLs of the videos
             session (Session, optional): the session to use to create request. Defaults to Session.
+            process (bool, optional): whether to get description of the video. Defaults to False.
         """
         self._terms = urllib.parse.quote(terms)
         self._callback = callback
         self._session = session
+        self._process = process
 
     @staticmethod
     def _get_description(content: str) -> str:
@@ -152,15 +158,20 @@ class YoutubeCrawler(BaseCrawler):
                                     "text"
                                 ]
 
-                                video_page = session().get(video_url)
-                                description = self._get_description(video_page.text)
+                                if self._process:
+                                    video_page = session().get(video_url)
+                                    description = self._get_description(video_page.text)
 
-                                audio = Audio(
-                                    url=video_url,
-                                    title=title,
-                                    author=channel_name,
-                                    description=description,
-                                )
+                                    audio = Audio(
+                                        url=video_url,
+                                        title=title,
+                                        author=channel_name,
+                                        description=description,
+                                    )
+                                else:
+                                    audio = Audio(
+                                        url=video_url, title=title, author=channel_name
+                                    )
 
                                 # Call the callback function
                                 self._callback(video_url, audio)
