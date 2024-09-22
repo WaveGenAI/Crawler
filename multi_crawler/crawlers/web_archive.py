@@ -62,7 +62,7 @@ class ArchiveCrawler(BaseCrawler):
                 audio = Audio(**metadata)
                 self._callback(audio)
 
-    def crawl(self) -> None:
+    def crawl(self, *args, **kwargs) -> None:
         """Search and extract ids"""
 
         search = internetarchive.search_items(f"collection:{self._collection}")

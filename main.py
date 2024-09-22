@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from multi_crawler import (
     ArchiveCrawler,
@@ -7,7 +8,8 @@ from multi_crawler import (
     TorSession,
     YoutubeCrawler,
 )
-from multi_crawler.models import Audio
+
+logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(
@@ -47,13 +49,14 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     if args.csv and args.file_name is None:
-        raise ValueError("Please provide the name of the output file")
+        raise ValueError("Please provide the name of the output file using --file_name")
 
     exporter = CSVExporter(args.file_name, overwrite=args.overwrite)
 
     with open(args.input, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
+            logging.info(f"Processing line: {line}")
 
             if line.startswith("youtube:"):
                 crawlers = YoutubeCrawler(

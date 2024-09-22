@@ -29,6 +29,7 @@ class CSVExporter:
         Args:
             audio (Audio): the audio object to write to the CSV file
         """
+
         with open(self._filename, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
 

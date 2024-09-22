@@ -10,7 +10,7 @@ class BaseCrawler(ABC):
     """Base class for crawlers."""
 
     @abstractmethod
-    def crawl(self) -> None:
+    def crawl(self, *args, **kwargs) -> None:
         """
         Method to run the crawler
         """
