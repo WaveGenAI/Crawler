@@ -1,7 +1,9 @@
-import asyncio
+"""
+Copied from https://github.com/iv-org/youtube-trusted-session-generator/tree/master
+"""
+
 import json
 import sys
-import time
 
 from nodriver import cdp, loop, start
 
