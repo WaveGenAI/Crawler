@@ -3,3 +3,4 @@ python-dotenv
 stem
 internetarchive
 pytube
+stem

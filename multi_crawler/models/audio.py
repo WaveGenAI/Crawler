@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -12,3 +14,4 @@ class Audio(BaseModel):
     description: str = None
     genre: str = None
     album: str = None
+    tags: List[str] = None

@@ -1,5 +1,8 @@
 import argparse
 import logging
+import os
+
+from dotenv import load_dotenv
 
 from multi_crawler import (
     ArchiveCrawler,
@@ -10,6 +13,7 @@ from multi_crawler import (
 )
 
 logging.basicConfig(level=logging.INFO)
+load_dotenv(override=True)
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(
@@ -56,13 +60,16 @@ if __name__ == "__main__":
     with open(args.input, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            logging.info(f"Processing line: {line}")
+            logging.info("Processing line: %s", line)
 
+            session = (
+                TorSession(os.getenv("TOR_PASSWORD")) if args.tor_proxy else Session()
+            )
             if line.startswith("youtube:"):
                 crawlers = YoutubeCrawler(
                     line.split(" ", 1)[1],
                     callback=exporter,
-                    session=TorSession if args.tor_proxy else Session,
+                    session=session,
                 )
             else:
                 crawlers = ArchiveCrawler(line.split(" ", 1)[1], callback=exporter)

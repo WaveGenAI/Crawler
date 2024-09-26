@@ -1,10 +1,88 @@
 import json
 import logging
+import subprocess
+import time
+from queue import Queue
+from threading import Thread
 from typing import Callable, Sequence
 
+import yt_dlp
+
 from ..models import Audio
-from ..session import Session
+from ..session import Session, TorSession
 from .crawlers import BaseCrawler
+
+
+class YtbDLSession:
+    def __init__(self, is_tor_session: bool, po_token_reserve: int = 5, session=None):
+        self.is_tor_session = is_tor_session
+        self.po_token_queue = Queue()
+        self.ytb_dl = None
+        self.po_token_reserve = po_token_reserve
+        self.token_generator_thread = Thread(
+            target=self._token_generator_worker, daemon=True
+        )
+        self._session = session
+        self.token_generator_thread.start()
+
+    def _token_generator_worker(self):
+        while True:
+            if self.po_token_queue.qsize() < self.po_token_reserve:
+                new_token = self._generate_poo()
+                self.po_token_queue.put(new_token)
+            else:
+                time.sleep(1)  # Sleep to avoid constant CPU usage
+
+    def _create_ytb_dl(self):
+        settings = {
+            "proxy": "socks5://127.0.0.1:9050" if self.is_tor_session else None,
+            "po_token": f"web+{self._get_po_token()}",
+            "nocheckcertificate": True,
+            "quiet": True,
+            "noprogress": True,
+        }
+        self.ytb_dl = yt_dlp.YoutubeDL(settings)
+
+    def _get_po_token(self):
+        while len(self.po_token_queue.queue) == 0:
+            logging.warning("No poo token available. Waiting...")
+            time.sleep(1)
+
+        return self.po_token_queue.get()
+
+    def _generate_poo(self):
+        logging.info("Generating poo token")
+        result = subprocess.run(
+            ["./poo_gen.sh"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        result = result.stdout.strip()
+
+        if "warning" in result:
+            logging.warning("Failed to generate poo token. Retrying...")
+            return self._generate_poo()
+
+        poo_token = result.split("po_token: ")[1].split("\n")[0]
+        logging.info("Generated poo token: %s", poo_token[:10] + "...")
+        return poo_token.strip()
+
+    def extract_info(self, url):
+        logging.info("Extracting info from %s", url)
+        if self.ytb_dl is None:
+            self._create_ytb_dl()
+
+        try:
+            return self.ytb_dl.extract_info(url, download=False)
+        except yt_dlp.utils.DownloadError:
+            logging.warning("YouTube bot detection triggered. Updating session...")
+            if self.is_tor_session:
+                self._session.renew_connection()
+
+            self._create_ytb_dl()
+            return self.extract_info(url)
 
 
 class YoutubeCrawler(BaseCrawler):
@@ -26,7 +104,35 @@ class YoutubeCrawler(BaseCrawler):
 
         self.logging = logging.getLogger(__name__)
 
-    def crawl(self, *_, **kwargs) -> None:
+        self._nbm_requests = 0
+
+        self.ytb_dl_session = YtbDLSession(
+            isinstance(self._session, TorSession), session=self._session
+        )
+
+    def _get_ytb_data(self, url):
+        try:
+            info = self.ytb_dl_session.extract_info(url)
+        except Exception as ex:
+            self.logging.error("Failed to extract info: %s", ex)
+            return
+
+        if not "Music" in info["categories"]:
+            logging.info("Skipping non-music video: %s", info["title"])
+            return
+
+        logging.info("Found music video: %s", info["title"])
+        audio = Audio(
+            url=url,
+            title=info["title"],
+            author=info["channel"],
+            description=info["description"],
+            tags=info["tags"],
+        )
+
+        self._callback(audio)
+
+    def crawl(self, *args, **kwargs) -> None:
         """Find and return URLs of Youtube videos based on search terms."""
 
         nb_results = kwargs.get("nb_results", -1)
@@ -45,12 +151,8 @@ class YoutubeCrawler(BaseCrawler):
                     break  # no more results
 
                 for item in results["items"]:
-                    audio = Audio(
-                        url=f"{self.YOUTUBE_ENDPOINT}/watch?v={item['id']}",
-                        title=item["title"],
-                        author=item["channelTitle"],
-                    )
-                    self._callback(audio)
+                    self._get_ytb_data(f"{self.YOUTUBE_ENDPOINT}/watch?v={item['id']}")
+
                     results_nbm += 1
 
             if "nextPage" in results:
@@ -66,8 +168,7 @@ class YoutubeCrawler(BaseCrawler):
         context = None
 
         try:
-            session = self._session()
-            response = session().get(url)
+            response = self._session.get_session().get(url)
             page_content = response.text
 
             yt_init_data = page_content.split("var ytInitialData =")
@@ -146,8 +247,9 @@ class YoutubeCrawler(BaseCrawler):
         endpoint = f"{self.YOUTUBE_ENDPOINT}/youtubei/v1/search?key={next_page['nextPageToken']}"
 
         try:
-            session = self._session()
-            response = session().post(endpoint, json=next_page["nextPageContext"])
+            response = self._session.get_session().post(
+                endpoint, json=next_page["nextPageContext"]
+            )
             page_data = response.json()
 
             item1 = page_data["onResponseReceivedCommands"][0][

@@ -4,13 +4,15 @@ import requests
 from stem import Signal
 from stem.control import Controller
 
+from requests import Session
+
 
 class Session:
     """
     Create a new session object.
     """
 
-    def __call__(self) -> Any:
+    def get_session(self) -> Session:
         return requests.Session()
 
 
@@ -21,13 +23,14 @@ class TorSession(Session):
         super().__init__()
         self.__pswd = pswd
 
-    def _renew_connection(self) -> None:
+    def renew_connection(self) -> None:
+        """Renew the Tor connection."""
         with Controller.from_port(port=9051) as controller:
             controller.authenticate(password=self.__pswd)
             controller.signal(Signal.NEWNYM)
 
-    def __call__(self) -> Any:
-        self._renew_connection()
+    def get_session(self) -> Session:
+        """Get a new session object with Tor proxy settings."""
         session = requests.Session()
         session.proxies = {
             "http": "socks5://127.0.0.1:9050",
