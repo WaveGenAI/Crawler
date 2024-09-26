@@ -1,10 +1,12 @@
-from typing import Any
+import logging
 
 import requests
+from requests import Session
 from stem import Signal
 from stem.control import Controller
 
-from requests import Session
+logger = logging.getLogger("stem")
+logger.disabled = True
 
 
 class Session:
