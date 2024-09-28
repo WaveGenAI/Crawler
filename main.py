@@ -42,7 +42,13 @@ if __name__ == "__main__":
         help="Use Tor proxy to make requests on youtube",
         default=False,
     )
-
+    argparser.add_argument(
+        "--num_processes",
+        type=int,
+        help="Number of processes to use for crawling",
+        default=10,
+        required=False,
+    )
     args = argparser.parse_args()
 
     if args.csv and args.file_name is None:
@@ -57,7 +63,9 @@ if __name__ == "__main__":
 
             if line.startswith("youtube:"):
                 crawlers = YoutubeCrawler(
-                    line.split(" ", 1)[1], callback=exporter, num_processes=10
+                    line.split(" ", 1)[1],
+                    callback=exporter,
+                    num_processes=args.num_processes,
                 )
             else:
                 crawlers = ArchiveCrawler(line.split(" ", 1)[1], callback=exporter)
