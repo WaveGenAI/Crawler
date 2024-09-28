@@ -4,10 +4,11 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Sequence
 
+import requests
+
 from ..models import Audio
-from ..session import Session, TorSession
+from ..ytb_session import YtbSession
 from .crawlers import BaseCrawler
-from ..ytb_session import YtbDLSession
 
 
 class YoutubeCrawler(BaseCrawler):
@@ -19,30 +20,39 @@ class YoutubeCrawler(BaseCrawler):
         self,
         terms: Sequence[str],
         callback: Callable,
-        session: Session = Session,
         process: bool = False,
+        num_processes: int = 10,
     ):
         self._terms = terms
         self._callback = callback
-        self._session = session
         self._process = process
+        self._num_processes = num_processes
 
         self.logging = logging.getLogger(__name__)
-
-        self._nbm_requests = 0
-
-        self.ytb_dl_session = YtbDLSession(
-            isinstance(self._session, TorSession), session=self._session
-        )
+        self._ytb_sessions = {
+            time.time(): YtbSession(
+                {"quiet": True, "noprogress": True, "no_warnings": True}
+            )
+            for _ in range(num_processes)
+        }
 
         # Create a thread pool with max 10 threads
-        self.executor = ThreadPoolExecutor(max_workers=10)
+        self.executor = ThreadPoolExecutor(max_workers=num_processes)
         self.futures = set()
 
     def _get_ytb_data(self, url):
-        info = self.ytb_dl_session.extract_info(url)
+        # get the oldest session
+        session = self._ytb_sessions.pop(min(self._ytb_sessions.keys()))
+        # append a new session
+        self._ytb_sessions[time.time()] = session
 
-        if not "Music" in info["categories"]:
+        info = session.extract_info(url, download=False)
+
+        if (
+            "categories" in info
+            and info["categories"] is not None
+            and not "Music" in info["categories"]
+        ):
             logging.info("Skipping non-music video: %s", info["title"])
             return
 
@@ -88,7 +98,7 @@ class YoutubeCrawler(BaseCrawler):
                     url = f"{self.YOUTUBE_ENDPOINT}/watch?v={item['id']}"
 
                     # Ensure we don't have more than 10 active threads
-                    while len(self.futures) >= 10:
+                    while len(self.futures) > self._num_processes:
                         self._manage_futures()
                         time.sleep(0.1)  # Sleep briefly to avoid tight loop
 
@@ -110,7 +120,7 @@ class YoutubeCrawler(BaseCrawler):
         context = None
 
         try:
-            response = self._session.get_session().get(url)
+            response = requests.get(url)
             page_content = response.text
 
             yt_init_data = page_content.split("var ytInitialData =")
@@ -189,9 +199,7 @@ class YoutubeCrawler(BaseCrawler):
         endpoint = f"{self.YOUTUBE_ENDPOINT}/youtubei/v1/search?key={next_page['nextPageToken']}"
 
         try:
-            response = self._session.get_session().post(
-                endpoint, json=next_page["nextPageContext"]
-            )
+            response = requests.post(endpoint, json=next_page["nextPageContext"])
             page_data = response.json()
 
             item1 = page_data["onResponseReceivedCommands"][0][

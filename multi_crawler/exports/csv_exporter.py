@@ -5,7 +5,7 @@ the results of the crawler to a CSV file.
 
 import csv
 import os
-from typing import List
+from typing import Any
 
 from ..models import Audio
 
@@ -23,6 +23,25 @@ class CSVExporter:
                 writer = csv.writer(f)
                 writer.writerow(self._columns)
 
+    def _clean_value(self, value: Any) -> Any:
+        """Method to clean the value before writing it to the CSV file.
+
+        Args:
+            value (Any): the value to clean
+
+        Returns:
+            Any: the cleaned value
+        """
+
+        if isinstance(value, str):
+            return value.replace("\n", " ")
+
+        if isinstance(value, list):
+            value = ", ".join(value)
+            value = value.replace("\n", " ")
+
+        return value
+
     def __call__(self, audio: Audio):
         """Write the information of the audio to the CSV file.
 
@@ -36,7 +55,11 @@ class CSVExporter:
             # Write the values of the audio object to the CSV file
             writer.writerow(
                 [
-                    "" if getattr(audio, field) is None else getattr(audio, field)
+                    (
+                        ""
+                        if getattr(audio, field) is None
+                        else self._clean_value(getattr(audio, field))
+                    )
                     for field in self._columns
                 ]
             )

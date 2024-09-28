@@ -1,94 +1,79 @@
+""" 
+Wrapper for downloading videos from Youtube using Tor as a proxy.
+"""
+
 import logging
-import subprocess
-import time
-from queue import Queue
-from threading import Thread
+import random
+from typing import Any
 
 import yt_dlp
+from yt_dlp.utils import DownloadError
 
 
-class YtbDLSession:
-    """
-    Class to manage a YouTube-DL session with a pool of tokens.
-    """
+class YtbSession:
+    """Wrapper class for YoutubeDL that uses Tor as a proxy."""
 
-    def __init__(self, is_tor_session: bool, po_token_reserve: int = 5, session=None):
-        self.is_tor_session = is_tor_session
-        self.po_token_queue = Queue()
-        self.ytb_dl = None
-        self.po_token_reserve = po_token_reserve
-        self.token_generator_thread = Thread(
-            target=self._token_generator_worker, daemon=True
-        )
-        self._session = session
-        self.token_generator_thread.start()
+    def __init__(self, params: dict = None, **kwargs):
+        """Initializes the TorWrapper with optional parameters.
 
-    def _token_generator_worker(self):
-        while True:
-            if self.po_token_queue.qsize() < self.po_token_reserve:
-                new_token = self._generate_poo()
-                self.po_token_queue.put(new_token)
-            else:
-                time.sleep(1)  # Sleep to avoid constant CPU usage
+        Args:
+            params (dict, optional): Optional parameters for YoutubeDL. Defaults to None.
 
-    def _create_ytb_dl(self):
-        settings = {
-            "proxy": "socks5://127.0.0.1:9050" if self.is_tor_session else None,
-            "po_token": f"web+{self._get_po_token()}",
-            "nocheckcertificate": True,
-            "quiet": True,
-            "noprogress": True,
-        }
-
-        self.ytb_dl = yt_dlp.YoutubeDL(settings)
-
-    def _get_po_token(self):
-        if len(self.po_token_queue.queue) == 0:
-            logging.warning("No poo token available. Waiting...")
-
-        while len(self.po_token_queue.queue) == 0:
-            time.sleep(1)
-
-        return self.po_token_queue.get()
-
-    def _generate_poo(self):
-        logging.info("Generating poo token")
-        result = subprocess.run(
-            ["./multi_crawler/scripts/poo_gen.sh"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        result = result.stdout.strip()
-
-        if "warning" in result:
-            logging.warning("Failed to generate poo token. Retrying...")
-            return self._generate_poo()
-
-        poo_token = result.split("po_token: ")[1].split("\n")[0]
-        logging.info("Generated poo token: %s", poo_token[:10] + "...")
-        return poo_token.strip()
-
-    def extract_info(self, url) -> dict:
         """
-        Extracts info from a given URL using the YouTube-DL session.
-        args:
-            url: URL to extract info from.
-        returns:
-            dict: Extracted info from the URL.
+        self.params = params if params is not None else {}
+        self.kwargs = kwargs
+        self._init_ytdl()
+
+    def _gen_proxy(self) -> str:
+        """Generates a random proxy string using Tor."""
+        creds = str(random.randint(10000, 10**9)) + ":" + "foobar"
+        return f"socks5://{creds}@127.0.0.1:9050"
+
+    def _init_ytdl(self):
+        """Initializes or reinitializes the YoutubeDL instance with a new proxy."""
+        # Set a new proxy for each initialization
+        self.params["proxy"] = self._gen_proxy()
+        self.ytdl = yt_dlp.YoutubeDL(self.params, **self.kwargs)
+        logging.info("Initialized YoutubeDL with proxy %s", self.params["proxy"])
+
+    def _handle_download_error(self, method_name: str, *args, **kwargs) -> Any:
+        """Handles DownloadError by reinitializing and retrying the method call.
+
+        Args:
+            method_name (str): The name of the method to call.
+
+        Returns:
+            any: The return value of the method call.
         """
-
-        logging.info("Extracting info from %s", url)
-        if self.ytb_dl is None:
-            self._create_ytb_dl()
-
+        method = getattr(self.ytdl, method_name)
         try:
-            return self.ytb_dl.extract_info(url, download=False)
-        except yt_dlp.utils.DownloadError:
-            logging.warning("YouTube bot detection triggered. Updating session...")
-            if self.is_tor_session:
-                self._session.renew_connection()
+            return method(*args, **kwargs)
+        except DownloadError:
+            logging.warning(
+                "DownloadError in %s, reinitializing with new proxy...", method_name
+            )
+            self._init_ytdl()
+            return self._handle_download_error(method_name, *args, **kwargs)
 
-            self._create_ytb_dl()
-            return self.extract_info(url)
+    def extract_info(self, *args, **kwargs):
+        """Extracts information and handles DownloadError by reinitializing YoutubeDL."""
+        return self._handle_download_error("extract_info", *args, **kwargs)
+
+    def download(self, *args, **kwargs):
+        """Downloads a video and handles DownloadError by reinitializing YoutubeDL."""
+        return self._handle_download_error("download", *args, **kwargs)
+
+    def download_with_info_file(self, *args, **kwargs):
+        """Downloads a video with an info file, handles DownloadError by reinitializing."""
+        return self._handle_download_error("download_with_info_file", *args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        """Redirects attribute access to the YoutubeDL instance.
+
+        Args:
+            name (str): The name of the attribute to access.
+
+        Returns:
+            any: The attribute value.
+        """
+        return getattr(self.ytdl, name)
