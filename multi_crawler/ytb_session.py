@@ -22,19 +22,9 @@ class YtbSession:
         """
         self.params = params if params is not None else {}
         self.kwargs = kwargs
-        self._init_ytdl()
 
-    def _gen_proxy(self) -> str:
-        """Generates a random proxy string using Tor."""
-        creds = str(random.randint(10000, 10**9)) + ":" + "foobar"
-        return f"socks5://{creds}@127.0.0.1:9050"
-
-    def _init_ytdl(self):
-        """Initializes or reinitializes the YoutubeDL instance with a new proxy."""
-        # Set a new proxy for each initialization
-        self.params["proxy"] = self._gen_proxy()
+        self.params["proxy"] = "127.0.0.1:3128"
         self.ytdl = yt_dlp.YoutubeDL(self.params, **self.kwargs)
-        logging.info("Initialized YoutubeDL with proxy %s", self.params["proxy"])
 
     def _handle_download_error(self, method_name: str, *args, **kwargs) -> Any:
         """Handles DownloadError by reinitializing and retrying the method call.
@@ -49,11 +39,13 @@ class YtbSession:
         try:
             return method(*args, **kwargs)
         except DownloadError as e:
-            if "bot" in str(e).lower():
+            if (
+                "sign in" in str(e).lower()
+                or "failed to extract any player response" in str(e).lower()
+            ):
                 logging.warning(
                     "DownloadError in %s, reinitializing with new proxy...", method_name
                 )
-                self._init_ytdl()
                 return self._handle_download_error(method_name, *args, **kwargs)
             raise e
 
