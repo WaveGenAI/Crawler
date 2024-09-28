@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
             if line.startswith("youtube:"):
                 crawlers = YoutubeCrawler(
-                    line.split(" ", 1)[1], callback=exporter, num_processes=5
+                    line.split(" ", 1)[1], callback=exporter, num_processes=10
                 )
             else:
                 crawlers = ArchiveCrawler(line.split(" ", 1)[1], callback=exporter)

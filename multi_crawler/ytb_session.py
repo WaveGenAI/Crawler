@@ -48,12 +48,14 @@ class YtbSession:
         method = getattr(self.ytdl, method_name)
         try:
             return method(*args, **kwargs)
-        except DownloadError:
-            logging.warning(
-                "DownloadError in %s, reinitializing with new proxy...", method_name
-            )
-            self._init_ytdl()
-            return self._handle_download_error(method_name, *args, **kwargs)
+        except DownloadError as e:
+            if "bot" in str(e).lower():
+                logging.warning(
+                    "DownloadError in %s, reinitializing with new proxy...", method_name
+                )
+                self._init_ytdl()
+                return self._handle_download_error(method_name, *args, **kwargs)
+            raise e
 
     def extract_info(self, *args, **kwargs):
         """Extracts information and handles DownloadError by reinitializing YoutubeDL."""

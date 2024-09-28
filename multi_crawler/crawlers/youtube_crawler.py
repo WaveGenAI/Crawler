@@ -46,14 +46,10 @@ class YoutubeCrawler(BaseCrawler):
         # append a new session
         self._ytb_sessions[time.time()] = session
 
-        info = session.extract_info(url, download=False)
-
-        if (
-            "categories" in info
-            and info["categories"] is not None
-            and not "Music" in info["categories"]
-        ):
-            logging.info("Skipping non-music video: %s", info["title"])
+        try:
+            info = session.extract_info(url, download=False)
+        except Exception as e:
+            logging.error("Error extracting info from %s: %s", url, e)
             return
 
         logging.info("Found music video: %s", info["title"])
@@ -120,7 +116,7 @@ class YoutubeCrawler(BaseCrawler):
         context = None
 
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             page_content = response.text
 
             yt_init_data = page_content.split("var ytInitialData =")
@@ -149,7 +145,7 @@ class YoutubeCrawler(BaseCrawler):
                 }
             else:
                 print("cannot_get_init_data")
-                raise Exception("cannot_get_init_data")
+                raise Exception("Cannot get init data")
 
         except Exception as ex:
             print(ex)
@@ -199,7 +195,9 @@ class YoutubeCrawler(BaseCrawler):
         endpoint = f"{self.YOUTUBE_ENDPOINT}/youtubei/v1/search?key={next_page['nextPageToken']}"
 
         try:
-            response = requests.post(endpoint, json=next_page["nextPageContext"])
+            response = requests.post(
+                endpoint, json=next_page["nextPageContext"], timeout=10
+            )
             page_data = response.json()
 
             item1 = page_data["onResponseReceivedCommands"][0][
