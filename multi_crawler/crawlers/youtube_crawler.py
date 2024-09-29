@@ -39,6 +39,7 @@ class YoutubeCrawler(BaseCrawler):
         self.futures = set()
 
         self._search = Search(terms, {"params": "EgIwAQ%3D%3D"})
+        self._videos = set()
 
     def _manage_futures(self):
         """Helper function to clean up completed futures and maintain a max of 10 threads."""
@@ -49,6 +50,10 @@ class YoutubeCrawler(BaseCrawler):
             self.futures.remove(fut)
 
     def _get_ytb_data(self, url):
+        # check if the video has already been processed
+        if url in self._videos:
+            return
+
         # get the oldest session
         session = self._ytb_sessions.pop(min(self._ytb_sessions.keys()))
         # append a new session
@@ -70,6 +75,7 @@ class YoutubeCrawler(BaseCrawler):
         )
 
         self._callback(audio)
+        self._videos.add(url)
 
     def crawl(self, *args, **kwargs) -> None:
         """Find and return URLs of Youtube videos based on search terms."""
