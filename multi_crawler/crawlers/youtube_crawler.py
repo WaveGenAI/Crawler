@@ -60,11 +60,11 @@ class YoutubeCrawler(BaseCrawler):
             logging.error("Error extracting info from %s: %s", url, e)
             return
 
-        logging.info("Found music video: %s", info["title"])
+        # logging.info("Found music video: %s", info["title"])
         audio = Audio(
             url=url,
             title=info["title"],
-            author=info["channel"],
+            author=info["channel"] if "channel" in info else "",
             description=info["description"],
             tags=info["tags"],
         )
