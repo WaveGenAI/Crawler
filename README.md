@@ -8,19 +8,11 @@ The crawler for WaveGenAI
 pip install -r requirements.txt
 ```
 
-2. Install Docker
-
 ## Usage
-
-Run the proxy
-```bash
-docker run -d --rm -it -p 3128:3128 -p 4444:4444 -e "TOR_INSTANCES=40" zhaowde/rotating-tor-http-proxy 
-```
-
 
 Run the crawler
 ```bash
-python main.py --csv --input FILE.txt --overwrite --file_name FILE.csv
+python main.py --csv --input FILE.txt --overwrite --file_name FILE.csv --num_processes 40
 ```
 
 ## License
