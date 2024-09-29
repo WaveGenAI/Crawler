@@ -49,7 +49,7 @@ if __name__ == "__main__":
         "--num_processes",
         type=int,
         help="Number of processes to use for crawling",
-        default=10,
+        default=40,
         required=False,
     )
     args = argparser.parse_args()
