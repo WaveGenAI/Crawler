@@ -29,7 +29,7 @@ class YoutubeCrawler(BaseCrawler):
         self.logging = logging.getLogger(__name__)
         self._ytb_sessions = {
             time.time(): YtbSession(
-                {"quiet": True, "noprogress": True, "no_warnings": True}
+                {"quiet": True, "noprogress": True, "no_warnings": True}, max_attemps=50
             )
             for _ in range(num_processes)
         }
@@ -60,7 +60,7 @@ class YoutubeCrawler(BaseCrawler):
             logging.error("Error extracting info from %s: %s", url, e)
             return
 
-        # logging.info("Found music video: %s", info["title"])
+        logging.info("Found music video: %s", info["title"])
         audio = Audio(
             url=url,
             title=info["title"],
