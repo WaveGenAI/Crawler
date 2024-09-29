@@ -1,7 +1,3 @@
-""" 
-Wrapper for downloading videos from Youtube using Tor as a proxy.
-"""
-
 import logging
 from typing import Any
 
@@ -31,7 +27,7 @@ class SilentLogger:
 class YtbSession:
     """Wrapper class for YoutubeDL that uses Tor as a proxy."""
 
-    def __init__(self, params: dict = None, **kwargs):
+    def __init__(self, params: dict = None, max_attemps: int = 200, **kwargs):
         """Initializes the TorWrapper with optional parameters.
 
         Args:
@@ -40,33 +36,43 @@ class YtbSession:
         """
         self.params = params if params is not None else {}
         self.kwargs = kwargs
+        self._max_attempts = max_attemps
 
         self.params["logger"] = SilentLogger()
         self.params["proxy"] = "127.0.0.1:3128"
+
         self.ytdl = yt_dlp.YoutubeDL(self.params, **self.kwargs)
 
     def _handle_download_error(self, method_name: str, *args, **kwargs) -> Any:
-        """Handles DownloadError by reinitializing and retrying the method call.
+        """Handles DownloadError by reinitializing and retrying the method call in a loop.
 
         Args:
             method_name (str): The name of the method to call.
 
         Returns:
-            any: The return value of the method call.
+            any: The return value of the method call or raises the error if unrecoverable.
         """
         method = getattr(self.ytdl, method_name)
-        try:
-            return method(*args, **kwargs)
-        except DownloadError as e:
-            if (
-                "sign in" in str(e).lower()
-                or "failed to extract any player response" in str(e).lower()
-            ):
-                logger.warning(
-                    "DownloadError in %s, reinitializing with new proxy...", method_name
-                )
-                return self._handle_download_error(method_name, *args, **kwargs)
-            raise e
+        attempt = 0
+
+        while attempt < self._max_attempts:
+            try:
+                return method(*args, **kwargs)
+            except DownloadError as e:
+                if (
+                    "sign in" in str(e).lower()
+                    or "failed to extract any player response" in str(e).lower()
+                ):
+                    logger.warning(
+                        "DownloadError in %s, reinitializing with new proxy... Attempt %d",
+                        method_name,
+                        attempt + 1,
+                    )
+                    attempt += 1
+                else:
+                    raise e
+        # If maximum attempts exceeded, raise DownloadError
+        raise DownloadError(f"Failed after {attempt} attempts")
 
     def extract_info(self, *args, **kwargs):
         """Extracts information and handles DownloadError by reinitializing YoutubeDL."""
