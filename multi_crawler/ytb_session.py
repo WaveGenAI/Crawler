@@ -40,6 +40,8 @@ class YtbSession:
         self.kwargs = kwargs
         self._max_attempts = max_attemps
 
+        self.params["logger"] = SilentLogger()
+
         self._init_ytdl()
 
     def _gen_proxy(self) -> str:
@@ -51,7 +53,6 @@ class YtbSession:
         """Initializes or reinitializes the YoutubeDL instance with a new proxy."""
         # Set a new proxy for each initialization
         self.params["proxy"] = self._gen_proxy()
-        self.params["logger"] = SilentLogger()
         self.ytdl = yt_dlp.YoutubeDL(self.params, **self.kwargs)
         logger.info("Initialized YoutubeDL with proxy %s", self.params["proxy"])
 

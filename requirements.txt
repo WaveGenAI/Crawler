@@ -1,6 +1,4 @@
-requests[socks]
 python-dotenv
 stem
 internetarchive
-pytube
-stem
+pytubefix
