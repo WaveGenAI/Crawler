@@ -14,7 +14,7 @@ pip install -r requirements.txt
 
 Run the proxy
 ```bash
-docker run --rm -it -p 3128:3128 -p 4444:4444 zhaowde/rotating-tor-http-proxy
+docker run -d --rm -it -p 3128:3128 -p 4444:4444 zhaowde/rotating-tor-http-proxy
 ```
 
 

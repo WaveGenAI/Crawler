@@ -3,11 +3,29 @@ Wrapper for downloading videos from Youtube using Tor as a proxy.
 """
 
 import logging
-import random
 from typing import Any
 
 import yt_dlp
 from yt_dlp.utils import DownloadError
+
+# create a logger for the module with the module name
+logger = logging.getLogger(__name__)
+
+
+class SilentLogger:
+    """Silent logger class that does not log anything to avoid ram usage."""
+
+    def debug(self, msg):
+        pass
+
+    def info(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        pass
 
 
 class YtbSession:
@@ -23,6 +41,7 @@ class YtbSession:
         self.params = params if params is not None else {}
         self.kwargs = kwargs
 
+        self.params["logger"] = SilentLogger()
         self.params["proxy"] = "127.0.0.1:3128"
         self.ytdl = yt_dlp.YoutubeDL(self.params, **self.kwargs)
 
@@ -43,7 +62,7 @@ class YtbSession:
                 "sign in" in str(e).lower()
                 or "failed to extract any player response" in str(e).lower()
             ):
-                logging.warning(
+                logger.warning(
                     "DownloadError in %s, reinitializing with new proxy...", method_name
                 )
                 return self._handle_download_error(method_name, *args, **kwargs)

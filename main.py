@@ -8,6 +8,9 @@ from multi_crawler import ArchiveCrawler, CSVExporter, YoutubeCrawler
 logging.basicConfig(level=logging.INFO)
 load_dotenv(override=True)
 
+# disable logging from ytb_session
+logging.getLogger("multi_crawler.ytb_session").setLevel(logging.ERROR)
+
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(
         prog="multi_crawler",
