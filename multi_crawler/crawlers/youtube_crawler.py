@@ -27,12 +27,7 @@ class YoutubeCrawler(BaseCrawler):
         self._num_processes = num_processes
 
         self.logging = logging.getLogger(__name__)
-        self._ytb_sessions = {
-            time.time(): YtbSession(
-                {"quiet": True, "noprogress": True, "no_warnings": True}, max_attemps=50
-            )
-            for _ in range(num_processes)
-        }
+        self._ytb_sessions = {}
 
         # Create a thread pool with max 10 threads
         self.executor = ThreadPoolExecutor(max_workers=num_processes)
@@ -53,6 +48,11 @@ class YoutubeCrawler(BaseCrawler):
         # check if the video has already been processed
         if url in self._videos:
             return
+
+        if len(self._ytb_sessions) == 0:
+            self._ytb_sessions[time.time()] = YtbSession(
+                {"quiet": True, "noprogress": True, "no_warnings": True}, max_attemps=50
+            )
 
         # get the oldest session
         session = self._ytb_sessions.pop(min(self._ytb_sessions.keys()))

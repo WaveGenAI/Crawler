@@ -1,5 +1,6 @@
 import logging
 import random
+import subprocess
 from typing import Any
 
 import yt_dlp
@@ -46,13 +47,38 @@ class YtbSession:
 
     def _gen_proxy(self) -> str:
         """Generates a random proxy string using Tor."""
-        creds = str(random.randint(10000, 10**9)) + ":" + "foobar"
-        return f"socks5://{creds}@127.0.0.1:9050"
+        # creds = str(random.randint(10000, 10**9)) + ":" + "foobar"
+        return "http://127.0.0.1:3128"  # return f"socks5://{creds}@127.0.0.1:9050"
+
+    def _generate_poo(self):
+        logger.info("Generating poo token")
+        result = subprocess.run(
+            ["./multi_crawler/scripts/poo_gen.sh"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        result = result.stdout.strip()
+
+        if "warning" in result:
+            logger.warning("Failed to generate poo token. Retrying...")
+            return self._generate_poo()
+
+        poo_token = result.split("po_token: ")[1].split("\n")[0]
+        logger.info("Generated poo token: %s", poo_token[:10] + "...")
+        return poo_token.strip()
 
     def _init_ytdl(self):
         """Initializes or reinitializes the YoutubeDL instance with a new proxy."""
         # Set a new proxy for each initialization
         self.params["proxy"] = self._gen_proxy()
+
+        try:
+            self.params["po_token"] = f"web+{self._generate_poo()}"
+        except subprocess.CalledProcessError:
+            pass
+
         self.ytdl = yt_dlp.YoutubeDL(self.params, **self.kwargs)
         logger.info("Initialized YoutubeDL with proxy %s", self.params["proxy"])
 
@@ -67,7 +93,6 @@ class YtbSession:
         """
 
         attempt = 0
-
         while attempt < self._max_attempts or self._max_attempts == -1:
             try:
                 method = getattr(self.ytdl, method_name)
