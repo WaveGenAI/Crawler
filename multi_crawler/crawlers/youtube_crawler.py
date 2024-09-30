@@ -1,13 +1,14 @@
-import json
+import http
 import logging
+import random
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Sequence
 
-from pytubefix import Search
+import pytubefix.exceptions
+from pytubefix import Search, YouTube
 
 from ..models import Audio
-from ..ytb_session import YtbSession
 from .crawlers import BaseCrawler
 
 
@@ -25,15 +26,12 @@ class YoutubeCrawler(BaseCrawler):
         self._terms = terms
         self._callback = callback
         self._num_processes = num_processes
-
+        self._terms = terms
         self.logging = logging.getLogger(__name__)
-        self._ytb_sessions = {}
 
         # Create a thread pool with max 10 threads
         self.executor = ThreadPoolExecutor(max_workers=num_processes)
         self.futures = set()
-
-        self._search = Search(terms, {"params": "EgIwAQ%3D%3D"})
         self._videos = set()
 
     def _manage_futures(self):
@@ -49,29 +47,30 @@ class YoutubeCrawler(BaseCrawler):
         if url in self._videos:
             return
 
-        if len(self._ytb_sessions) == 0:
-            self._ytb_sessions[time.time()] = YtbSession(
-                {"quiet": True, "noprogress": True, "no_warnings": True}, max_attemps=50
-            )
+        success = False
+        while not success:
+            try:
+                video = YouTube(
+                    url,
+                    proxies={
+                        "http": "http://127.0.0.1:3128",
+                        "https": "http://127.0.0.1:3128",
+                    },
+                )
+                _ = video.title
+                success = True
+            except Exception as e:  # pylint: disable=broad-except
+                if not isinstance(e, pytubefix.exceptions.BotDetection):
+                    logging.error("Failed to get video data: %s", e)
+                    return
 
-        # get the oldest session
-        session = self._ytb_sessions.pop(min(self._ytb_sessions.keys()))
-        # append a new session
-        self._ytb_sessions[time.time()] = session
-
-        try:
-            info = session.extract_info(url, download=False)
-        except Exception as e:
-            logging.error("Error extracting info from %s: %s", url, e)
-            return
-
-        logging.info("Found music video: %s", info["title"])
+        logging.info("Found music video: %s", video.title)
         audio = Audio(
             url=url,
-            title=info["title"],
-            author=info["channel"] if "channel" in info else "",
-            description=info["description"],
-            tags=info["tags"],
+            title=video.title,
+            author=video.author,
+            description=video.description,
+            tags=video.keywords,
         )
 
         self._callback(audio)
@@ -80,16 +79,24 @@ class YoutubeCrawler(BaseCrawler):
     def crawl(self, *args, **kwargs) -> None:
         """Find and return URLs of Youtube videos based on search terms."""
 
-        last_nbm_results = 0
-        while len(self._search.videos) > last_nbm_results:
-            for result in self._search.videos[last_nbm_results:]:
-                url = f"{self.YOUTUBE_ENDPOINT}/watch?v={result.video_id}"
-                future = self.executor.submit(self._get_ytb_data, url)
-                self.futures.add(future)
+        success = False
+        while not success:
+            try:
+                search = Search(self._terms, {"params": "EgIwAQ%3D%3D"})
+                last_nbm_results = 0
+                while len(search.videos) > last_nbm_results:
+                    for result in search.videos[last_nbm_results:]:
+                        url = f"{self.YOUTUBE_ENDPOINT}/watch?v={result.video_id}"
+                        future = self.executor.submit(self._get_ytb_data, url)
+                        self.futures.add(future)
 
-                while len(self.futures) >= self._num_processes:
-                    time.sleep(0.1)
-                    self._manage_futures()
+                        while len(self.futures) >= self._num_processes:
+                            time.sleep(0.1)
+                            self._manage_futures()
 
-            last_nbm_results = len(self._search.videos)
-            self._search.get_next_results()
+                    last_nbm_results = len(search.videos)
+                    search.get_next_results()
+                success = True
+            except Exception as e:
+                logging.error("Failed to get search results: %s", e)
+                time.sleep(5)
