@@ -2,3 +2,4 @@ python-dotenv
 stem
 internetarchive
 pytubefix
+datasets

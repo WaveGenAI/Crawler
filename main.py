@@ -1,6 +1,7 @@
 import argparse
 import logging
 
+import datasets
 from dotenv import load_dotenv
 
 from multi_crawler import ArchiveCrawler, CSVExporter, YoutubeCrawler
@@ -51,6 +52,12 @@ if __name__ == "__main__":
         default=40,
         required=False,
     )
+    argparser.add_argument(
+        "--huggingface_dataset",
+        type=str,
+        help="Name of the dataset to push to Huggingface Hub",
+        required=False,
+    )
     args = argparser.parse_args()
 
     if args.csv and args.file_name is None:
@@ -72,3 +79,7 @@ if __name__ == "__main__":
             else:
                 crawlers = ArchiveCrawler(line.split(" ", 1)[1], callback=exporter)
             crawlers.crawl()
+
+    if args.huggingface_dataset:
+        dataset = datasets.load_dataset("csv", data_files=args.file_name)
+        dataset.push_to_hub(args.huggingface_dataset)
